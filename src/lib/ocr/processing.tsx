@@ -102,7 +102,7 @@ ${taskDetails}
         const userMessages = recentMessages
           .filter((m) => m.author.id == user.id)
           .map((m) => m.id);
-          
+
         if (userMessages.length > 0) {
           await channel.deleteMessages(
             userMessages,
@@ -115,6 +115,7 @@ ${taskDetails}
     }
 
     consola.success("Messages deleted, user removed.");
+    removedUsers.delete(user.id);
   } catch (err: any) {
     removedUsers.delete(user.id);
     consola.error("Error removing user:", err);
