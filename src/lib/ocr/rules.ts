@@ -14,11 +14,24 @@ const blockedPatterns = [
 ];
 const regexList = blockedPatterns.map((p) => new RegExp(p, "i"));
 
-export function checkText(text: string) {
+export function checkText(text: string, source: ContentSource): Result {
   for (const expression of regexList) {
     const match = text.toLowerCase().match(expression);
-    if (match) return expression;
+
+    if (match)
+      return {
+        detected: true,
+        source,
+        confidence: 75,
+        match: expression,
+        originalContent: text,
+      };
   }
 
-  return false;
+  return {
+    detected: false,
+    source,
+    confidence: 75,
+    originalContent: text,
+  };
 }

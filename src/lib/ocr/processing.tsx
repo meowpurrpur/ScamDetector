@@ -8,7 +8,7 @@ import {
   User,
 } from "oceanic.js";
 import { downloadImage, extractImageUrls, readTextFromImage } from "./utils";
-import { checkText } from "./filter";
+import { checkText } from "./rules";
 import { client } from "../client";
 import config from "../config";
 import { Container, TextDisplay } from "../../components";
@@ -20,8 +20,6 @@ type Task = {
   type: "url" | "attachment";
   value: string;
 };
-
-type Result = RegExp | false;
 
 async function removeUser(user: User, tasks: Task[], results: Result[]) {
   if (removedUsers.has(user.id)) return;
@@ -74,7 +72,7 @@ Thank you for your understanding,
 
     const taskDetails = tasks
       .map((t, i) => {
-        return `**Source:** ${t.type}\n**Reference:** ${t.value}\n**Detected:** \`${results[i] || "None"}\``;
+        return `**Source:** ${t.type}\n**Reference:** ${t.value}\n**Detected:** \`${results[i].match ?? "none"}\``;
       })
       .join("\n\n");
 
@@ -164,12 +162,12 @@ export async function handleMessage(message: Message) {
         if (!filePath) continue;
 
         const text = await readTextFromImage(filePath);
-        const result = checkText(text);
+        const result = checkText(text, "ocr");
 
         consola.debug("Detected text:", text ?? "none", "Result:", result);
         results.push(result);
 
-        if (result !== false) detected = true;
+        if (result.detected) detected = true;
         fs.unlinkSync(filePath);
       } catch (err: any) {
         consola.error("OCR error:", err);

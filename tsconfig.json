@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "rootDir": "./src",
+    "rootDir": ".",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -12,5 +12,5 @@
     "jsxImportSource": "@theo/jsx-runtime",
     "allowJs": true
   },
-  "include": ["src", "tsx"]
+  "include": ["src", "tests"]
 }
