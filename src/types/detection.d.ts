@@ -1,9 +1,15 @@
-type ContentSource = "ocr" | "unknown";
+type ContentSource = "ocr" | "text" | "unknown";
 
 type Result = {
   detected: boolean;
-  match?: RegExp | string;
+  matches: RegExp[];
   confidence?: number;
   source: ContentSource;
   originalContent?: string;
+};
+
+type DetectionRule = {
+  pattern: RegExp;
+  score: number;
+  appliesTo: ContentSource[];
 };

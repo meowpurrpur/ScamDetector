@@ -7,11 +7,15 @@ import {
   MessageFlags,
   User,
 } from "oceanic.js";
-import { downloadImage, extractImageUrls, readTextFromImage } from "./utils";
-import { checkText } from "./rules";
-import { client } from "../client";
-import config from "../config";
-import { Container, TextDisplay } from "../../components";
+import {
+  downloadImage,
+  extractImageUrls,
+  readTextFromImage,
+} from "./ocr/utils";
+import { checkContent } from "./ocr/rules";
+import { client } from "./client";
+import config from "./config";
+import { Container, TextDisplay } from "../components";
 
 export const processingUsers = new Set<string>();
 export const removedUsers = new Set<string>();
@@ -19,9 +23,10 @@ export const removedUsers = new Set<string>();
 type Task = {
   type: "url" | "attachment";
   value: string;
+  result?: Result;
 };
 
-async function removeUser(user: User, tasks: Task[], results: Result[]) {
+async function removeUser(user: User, tasks: Task[]) {
   if (removedUsers.has(user.id)) return;
   removedUsers.add(user.id);
 
@@ -72,7 +77,23 @@ Thank you for your understanding,
 
     const taskDetails = tasks
       .map((t, i) => {
-        return `**Source:** ${t.type}\n**Reference:** ${t.value}\n**Detected:** \`${results[i].match ?? "none"}\``;
+        if (!t.result) {
+          return `### Task ${i + 1}
+**Source:** ${t.type}
+**Reference:** ${t.value}
+**Result:** No result`;
+        }
+
+        return `### Task ${i + 1}
+**Source:** ${t.type}
+**Reference:** ${t.value}
+**Detected:** ${t.result.detected ? "Yes" : "No"}
+**Confidence:** ${t.result.confidence}%
+**Matches:** ${
+          t.result.matches.length > 0
+            ? t.result.matches.map((m) => `\`${m.source}\``).join(", ")
+            : "None"
+        }`;
       })
       .join("\n\n");
 
@@ -80,7 +101,7 @@ Thank you for your understanding,
       <Container accentColor={0x5865f2}>
         <TextDisplay>{`## Member kicked
 - <@${user.id}> (${user.id}) has been kicked
-### Results:
+## Results:
 ${taskDetails}
         `}</TextDisplay>
       </Container>
@@ -131,14 +152,11 @@ export async function handleMessage(message: Message) {
 
   try {
     const tasks: Task[] = [];
-    const results: Result[] = [];
-    let detected = false;
 
     if (message.content) {
       const imageURLs = extractImageUrls(message.content);
 
       for (const url of imageURLs) {
-        consola.debug(`Found URL: ${url}`);
         tasks.push({
           type: "url",
           value: url,
@@ -155,27 +173,48 @@ export async function handleMessage(message: Message) {
       });
     }
 
-    for (const task of tasks) {
-      consola.debug("Processing task", task);
-      try {
-        const filePath = await downloadImage(task.value);
-        if (!filePath) continue;
+    await Promise.all(
+      tasks.map(async (task) => {
+        consola.debug("Processing task", task.value);
 
-        const text = await readTextFromImage(filePath);
-        const result = checkText(text, "ocr");
+        let filePath: string | undefined;
+        try {
+          filePath = await downloadImage(task.value);
+          if (!filePath) return;
 
-        consola.debug("Detected text:", text ?? "none", "Result:", result);
-        results.push(result);
+          const text = await readTextFromImage(filePath);
+          const result = checkContent(text, "ocr");
 
-        if (result.detected) detected = true;
-        fs.unlinkSync(filePath);
-      } catch (err: any) {
-        consola.error("OCR error:", err);
-      }
-    }
+          task.result = result;
+          consola.debug(
+            [
+              `Task: ${task.type}`,
+              `Reference: ${task.value}`,
+              `Detected: ${result.detected}`,
+              `Confidence: ${result.confidence}%`,
+              `Matches: ${
+                result.matches.length
+                  ? result.matches.map((m) => m.source).join(", ")
+                  : "none"
+              }`,
+            ].join("\n"),
+          );
+        } catch (err: any) {
+          consola.error("OCR error:", err);
+        } finally {
+          if (filePath) {
+            try {
+              fs.unlinkSync(filePath);
+            } catch {}
+          }
+        }
+      }),
+    );
 
+    const detected = tasks.some((task) => task.result?.detected);
     consola.debug("Final result, detected:", detected);
-    if (detected) await removeUser(message.author, tasks, results);
+
+    if (detected) await removeUser(message.author, tasks);
   } finally {
     processingUsers.delete(message.author.id);
   }

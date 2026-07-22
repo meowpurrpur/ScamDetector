@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import Tesseract from "tesseract.js";
+import { createWorker, type Worker } from "tesseract.js";
 import consola from "consola";
 
 export function extractImageUrls(text: string) {
@@ -43,7 +43,39 @@ export async function downloadImage(url: string): Promise<string | undefined> {
   }
 }
 
+const workerCount = 4;
+
+let workers: Worker[] = [];
+let workerIndex = 0;
+let initPromise: Promise<void> | undefined;
+
+async function initWorkers() {
+  if (workers.length) return;
+
+  if (!initPromise) {
+    initPromise = Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        const worker = await createWorker("eng");
+        workers.push(worker);
+      }),
+    ).then(() => undefined);
+  }
+
+  await initPromise;
+}
+
 export async function readTextFromImage(filePath: string) {
-  const result = await Tesseract.recognize(filePath, "eng");
+  await initWorkers();
+
+  const worker = workers[workerIndex];
+  workerIndex = (workerIndex + 1) % workers.length;
+
+  const result = await worker.recognize(filePath);
   return result.data.text;
+}
+
+export async function terminateWorkers() {
+  await Promise.all(workers.map((worker) => worker.terminate()));
+
+  workers = [];
 }

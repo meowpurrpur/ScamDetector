@@ -1,4 +1,4 @@
-import { handleMessage } from "../lib/ocr/processing";
+import { handleMessage } from "../lib/processing";
 import { Message } from "oceanic.js";
 
 export const name = "messageCreate";

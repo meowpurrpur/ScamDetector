@@ -1,37 +1,94 @@
-const blockedPatterns = [
-  "cryptocurrency casino",
-  "claim your reward",
-  "giving away $",
-  "your withdrawal of",
-  "free gift",
-  "activate code",
-  "special promo code",
-  "withdraw the bonus",
-  "select a withdraw method",
-  "withdraw the funds",
-  "enter the promo code",
-  "your reward",
+const rules: DetectionRule[] = [
+  {
+    pattern: /\bcryptocurrency casino\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bclaim your reward\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bgiving away \$?/i,
+    score: 40,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\byour withdrawal of\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bfree gift\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bactivate code\b/i,
+    score: 40,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bspecial promo code\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bwithdraw the bonus\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bselect a withdraw method\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bwithdraw the funds\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\benter the promo code\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\byour reward\b/i,
+    score: 40,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bwill be transferred\b/i,
+    score: 30,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bselect crypto to withdraw\b/i,
+    score: 30,
+    appliesTo: ["text", "ocr"],
+  },
 ];
-const regexList = blockedPatterns.map((p) => new RegExp(p, "i"));
 
-export function checkText(text: string, source: ContentSource): Result {
-  for (const expression of regexList) {
-    const match = text.toLowerCase().match(expression);
+export function checkContent(content: string, source: ContentSource): Result {
+  let score = 0;
+  const matches: RegExp[] = [];
 
-    if (match)
-      return {
-        detected: true,
-        source,
-        confidence: 75,
-        match: expression,
-        originalContent: text,
-      };
+  for (const rule of rules) {
+    if (!rule.appliesTo.includes(source)) continue;
+
+    if (rule.pattern.test(content)) {
+      score += rule.score;
+      matches.push(rule.pattern);
+    }
   }
 
   return {
-    detected: false,
+    detected: score >= 50,
     source,
-    confidence: 75,
-    originalContent: text,
+    confidence: Math.min(score, 100),
+    matches,
+    originalContent: content,
   };
 }
