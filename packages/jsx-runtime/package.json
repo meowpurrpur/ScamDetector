@@ -1,0 +1,10 @@
+{
+  "name": "@theo/jsx-runtime",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "./jsx-runtime.js",
+  "exports": {
+    "./jsx-runtime": "./jsx-runtime.js",
+    "./jsx-dev-runtime": "./jsx-dev-runtime.js"
+  }
+}

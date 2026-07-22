@@ -1,0 +1,7 @@
+.env
+*.db*
+node_modules
+dist
+
+eng.traineddata
+temp_*
