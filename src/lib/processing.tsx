@@ -16,6 +16,7 @@ import { checkContent } from "./ocr/rules";
 import { client } from "./client";
 import config from "./config";
 import { Container, TextDisplay } from "../components";
+import db, { getGuildConfig } from "./db";
 
 export const processingUsers = new Set<string>();
 export const removedUsers = new Set<string>();
@@ -26,15 +27,20 @@ type Task = {
   result?: Result;
 };
 
-async function removeUser(user: User, tasks: Task[]) {
-  if (removedUsers.has(user.id)) return;
-  removedUsers.add(user.id);
+async function removeUser(message: Message, tasks: Task[]) {
+  const user = message.author;
+  const guild = message.guild;
 
+  if (removedUsers.has(user.id) || !guild) return;
+  const guildConfig = getGuildConfig(guild.id);
+  if (!guildConfig) return;
+
+  removedUsers.add(user.id);
   consola.info(`Removing ${user.username} (${user.id})...`);
+
   try {
-    const guild = await client.rest.guilds.get(config.GUILD_ID);
     const logChannel = guild.channels.get(
-      config.LOG_CHANNEL_ID,
+      guildConfig.logChannelId,
     ) as AnyTextableGuildChannel;
 
     if (!guild || !logChannel)
@@ -47,7 +53,7 @@ async function removeUser(user: User, tasks: Task[]) {
 
 Your account has been flagged for possible spam activity or a compromised account and has been removed from \`${guild.name}\`.
 
-**To rejoin, please click [here](${config.GUILD_INVITE})**! We hope this will be your first and last warning, please ensure your account is secure and follows the server rules to avoid future bans.
+**To rejoin, please click [here](${guildConfig.inviteLink})**! We hope this will be your first and last warning, please ensure your account is secure and follows the server rules to avoid future bans.
 
 For guidance on securing your account and avoiding social engineering attacks, we recommend reading [this article](https://discord.com/safety/securing-your-discord-account) from Discord.
 
@@ -142,14 +148,17 @@ ${taskDetails}
 }
 
 export async function handleMessage(message: Message) {
+  if (!message.guild) return;
   if (
     removedUsers.has(message.author.id) ||
     processingUsers.has(message.author.id)
   )
     return;
 
-  processingUsers.add(message.author.id);
+  const guildConfig = getGuildConfig(message.guild.id);
+  if (!guildConfig || guildConfig.enabled == 0) return;
 
+  processingUsers.add(message.author.id);
   try {
     const tasks: Task[] = [];
 
@@ -214,7 +223,7 @@ export async function handleMessage(message: Message) {
     const detected = tasks.some((task) => task.result?.detected);
     consola.debug("Final result, detected:", detected);
 
-    if (detected) await removeUser(message.author, tasks);
+    if (detected) await removeUser(message, tasks);
   } finally {
     processingUsers.delete(message.author.id);
   }

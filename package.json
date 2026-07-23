@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@theo/jsx-runtime": "workspace:*",
+    "better-sqlite3": "^13.0.1",
     "consola": "^3.4.2",
     "discord-api-types": "^0.38.50",
     "dotenv": "^17.4.2",
