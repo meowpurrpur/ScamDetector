@@ -1,17 +1,17 @@
 const rules: DetectionRule[] = [
   {
     pattern: /\bcryptocurrency casino\b/i,
-    score: 75,
+    score: 40,
     appliesTo: ["text", "ocr"],
   },
   {
     pattern: /\bclaim your reward\b/i,
-    score: 75,
+    score: 40,
     appliesTo: ["text", "ocr"],
   },
   {
     pattern: /\breward received\b/i,
-    score: 60,
+    score: 50,
     appliesTo: ["text", "ocr"],
   },
   {
@@ -87,6 +87,11 @@ const rules: DetectionRule[] = [
   {
     pattern: /\bunlock a special reward\b/i,
     score: 35,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bbonus event\b/i,
+    score: 75,
     appliesTo: ["text", "ocr"],
   },
 ];

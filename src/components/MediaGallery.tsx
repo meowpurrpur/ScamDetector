@@ -1,25 +1,18 @@
-import {
-  ComponentTypes,
-  type MediaGalleryComponent,
+import type {
+  MediaGalleryComponent,
+  MediaGalleryItem as MediaGalleryItemComp,
 } from "oceanic.js";
+import { ComponentTypes } from "oceanic.js";
 
 export interface MediaGalleryProps {
-  items: {
-    url: string;
-    description?: string;
-  }[];
+  children: MediaGalleryItemComp[];
 }
 
 export function MediaGallery({
-  items,
+  children,
 }: MediaGalleryProps): MediaGalleryComponent {
   return {
     type: ComponentTypes.MEDIA_GALLERY,
-    items: items.map((item) => ({
-      media: {
-        url: item.url,
-      },
-      description: item.description,
-    })),
+    items: children,
   };
 }

@@ -12,3 +12,7 @@ export * from "./UserSelect";
 export * from "./RoleSelect";
 export * from "./MentionableSelect";
 export * from "./ChannelSelect";
+export * from "./ComponentMessage";
+export * from "./MediaItem";
+export * from "./MediaGalleryItem";
+export * from "./br";

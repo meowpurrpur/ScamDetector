@@ -56,6 +56,11 @@ async function initWorkers() {
     initPromise = Promise.all(
       Array.from({ length: workerCount }, async () => {
         const worker = await createWorker("eng");
+        await worker.setParameters({
+          tessedit_char_whitelist:
+            "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$ ",
+        });
+
         workers.push(worker);
       }),
     ).then(() => undefined);
