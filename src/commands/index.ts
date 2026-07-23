@@ -1,20 +1,7 @@
 import { pathToFileURL } from "node:url";
-import {
-  ApplicationCommandTypes,
-  CommandInteraction,
-  CreateApplicationCommandOptions,
-} from "oceanic.js";
+import { CreateApplicationCommandOptions } from "oceanic.js";
 import { readFilesRecursive } from "../lib/utils";
-import { CommandOption } from "../framework/types";
-
-export type CommandContext = CommandInteraction<
-  any,
-  ApplicationCommandTypes.CHAT_INPUT
->;
-
-export type Validation = (
-  interaction: CommandContext,
-) => Promise<boolean> | boolean;
+import { CommandContext, CommandOption, Validation } from "../framework/types";
 
 export type Command = {
   data: CreateApplicationCommandOptions;
