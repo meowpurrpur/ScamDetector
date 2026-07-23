@@ -10,6 +10,11 @@ const rules: DetectionRule[] = [
     appliesTo: ["text", "ocr"],
   },
   {
+    pattern: /\breward received\b/i,
+    score: 60,
+    appliesTo: ["text", "ocr"],
+  },
+  {
     pattern: /\bgiving away \$?/i,
     score: 40,
     appliesTo: ["text", "ocr"],
@@ -41,7 +46,7 @@ const rules: DetectionRule[] = [
   },
   {
     pattern: /\bselect a withdraw method\b/i,
-    score: 75,
+    score: 40,
     appliesTo: ["text", "ocr"],
   },
   {
@@ -67,6 +72,21 @@ const rules: DetectionRule[] = [
   {
     pattern: /\bselect crypto to withdraw\b/i,
     score: 30,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bredeem your promo codeb/i,
+    score: 40,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bapply your code\b/i,
+    score: 20,
+    appliesTo: ["text", "ocr"],
+  },
+  {
+    pattern: /\bunlock a special reward\b/i,
+    score: 35,
     appliesTo: ["text", "ocr"],
   },
 ];

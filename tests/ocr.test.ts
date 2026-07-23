@@ -25,6 +25,7 @@ for (const scamType of readdirSync(datasetPath)) {
         consola.debug(
           `${image}, score: ${result.confidence}, matches:`,
           result.matches.length ?? "none",
+          result.originalContent
         );
 
         expect(result.detected).toBe(true);
