@@ -124,10 +124,10 @@ Thank you for your understanding,
           <MediaGallery>
             {tasks
               .filter((task) => task.filePath && task.result)
-              .map((task, index) => (
+              .map((_, index) => (
                 <MediaGalleryItem
                   url={`attachment://image-${index + 1}.png`}
-                  description={task.type}
+                  description={`Task ${index + 1}`}
                   spoiler
                 />
               ))}

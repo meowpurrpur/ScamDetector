@@ -25,6 +25,11 @@ const rules: DetectionRule[] = [
     appliesTo: ["text", "ocr"],
   },
   {
+    pattern: /\breceive your .{0,8} bonus\b/i,
+    score: 75,
+    appliesTo: ["text", "ocr"],
+  },
+  {
     pattern: /\bfree gift\b/i,
     score: 75,
     appliesTo: ["text", "ocr"],
