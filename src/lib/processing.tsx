@@ -77,8 +77,12 @@ Thank you for your understanding,
     const member = await guild.getMember(user.id);
     if (!member) throw Error("Failed to find guild member");
 
-    await member.kick("Comprimised account");
-    consola.info("Member removed from the server");
+    await guild.createBan(user.id, {
+      reason: "Compromised account",
+      deleteMessageSeconds: 60 * 60 * 24,
+    });
+
+    consola.info("Member banned and recent messages deleted");
 
     const taskDetails = tasks
       .map((t, i) => {
@@ -149,27 +153,13 @@ Thank you for your understanding,
       }
     }
 
-    for (const channel of await guild.getChannels()) {
-      if (channel.type !== ChannelTypes.GUILD_TEXT) continue;
-
-      try {
-        const recentMessages = await channel.getMessages({ limit: 100 });
-        const userMessages = recentMessages
-          .filter((m) => m.author.id == user.id)
-          .map((m) => m.id);
-
-        if (userMessages.length > 0) {
-          await channel.deleteMessages(
-            userMessages,
-            "Messages from comprimised account",
-          );
-        }
-      } catch (err: any) {
-        consola.error("Error while deleting messages from", channel, err);
-      }
+    try {
+      await guild.removeBan(user.id);
+      consola.info("Member unbanned (softban complete)");
+    } catch (err) {
+      consola.error("Failed to unban member after softban:", err);
     }
 
-    consola.success("Messages deleted, user removed.");
     removedUsers.delete(user.id);
   } catch (err: any) {
     removedUsers.delete(user.id);
