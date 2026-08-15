@@ -78,7 +78,7 @@ Thank you for your understanding,
     if (!member) throw Error("Failed to find guild member");
 
     await guild.createBan(user.id, {
-      reason: "Compromised account",
+      reason: "Compromised account (softban)",
       deleteMessageSeconds: 60 * 60 * 24,
     });
 
@@ -114,9 +114,9 @@ Thank you for your understanding,
     const logEmbed = (
       <ComponentMessage files={files}>
         <Container accentColor={0x5865f2}>
-          <TextDisplay>## Member kicked</TextDisplay>
+          <TextDisplay>## Member removed</TextDisplay>
           <TextDisplay>
-            {user.mention} ({user.id}) has been kicked
+            {user.mention} ({user.id}) has been softbanned
           </TextDisplay>
 
           <TextDisplay>
@@ -154,7 +154,7 @@ Thank you for your understanding,
     }
 
     try {
-      await guild.removeBan(user.id);
+      await guild.removeBan(user.id, "Softban (compromised account)");
       consola.info("Member unbanned (softban complete)");
     } catch (err) {
       consola.error("Failed to unban member after softban:", err);
