@@ -140,8 +140,12 @@ Thank you for your understanding,
       </ComponentMessage>
     );
 
-    await logChannel.createMessage(logEmbed);
-    consola.info("Log has been sent");
+    try {
+      await logChannel.createMessage(logEmbed);
+      consola.info("Log has been sent");
+    } catch (err) {
+      consola.log("Failed to send log", err);
+    }
 
     for (const task of tasks) {
       if (!task.filePath) continue;

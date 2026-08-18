@@ -30,7 +30,9 @@ export default defineCommand({
     const inviteLink = options.getString("invite-link");
 
     const permissions = logChannel!.appPermissions;
-    if (!permissions.has("SEND_MESSAGES")) {
+    if (
+      !(permissions.has("SEND_MESSAGES") && permissions.has("VIEW_CHANNEL"))
+    ) {
       await interaction.reply({
         content:
           "The bot don't have permission to send messages in the specified log channel.",
