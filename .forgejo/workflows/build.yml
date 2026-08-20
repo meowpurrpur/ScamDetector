@@ -1,4 +1,4 @@
-name: Build
+name: Build & test
 
 on:
   push:
@@ -10,7 +10,6 @@ jobs:
       fail-fast: false
       matrix:
         runner:
-          - node-20
           - node-22
 
     runs-on: ${{ matrix.runner }}
@@ -35,7 +34,7 @@ jobs:
       - name: Download datasets
         run: pnpm datasets:download
 
-      - name: Generate Hashes
+      - name: Generate hashes
         run: pnpm hash:gen
 
       - name: Test
