@@ -3,6 +3,7 @@
 A Discord bot that detects cryptocurrency scams in images, and more in the future.
 
 - Scans images for scam content
+- Compares image similarity to known images from a dataset
 - Uses OCR to detect suspicious text and patterns
 - Automatically kicks users, and sends them a DM with a link to rejoin once their account is secure
 
@@ -34,7 +35,14 @@ cp .env.example .env
 nano .env
 ```
 
-4. Start
+4. Download dataset & generate hashes
+
+```bash
+pnpm datasets:download
+pnpm hash:gen
+```
+
+5. Start
 
 To run as dev:
 
