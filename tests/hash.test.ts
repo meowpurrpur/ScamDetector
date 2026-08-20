@@ -1,22 +1,17 @@
-import { expect, test, afterAll } from "vitest";
+import { expect, test } from "vitest";
 import { readdirSync } from "node:fs";
-import { join } from "path";
-import { checkContent } from "../src/lib/ocr/rules";
-import { readTextFromImage, terminateWorkers } from "../src/lib/ocr/utils";
+import { join } from "node:path";
+import { checkImage } from "../src/lib/hash/utils";
 import consola from "consola";
 
 consola.level = 5;
-const datasetPath = join(__dirname, "../tests/datasets");
+const datasetPath = join(__dirname, "../tests/unknownDatasets");
 
 const results: {
   scamType: string;
   image: string;
   detected: boolean;
 }[] = [];
-
-afterAll(async () => {
-  await terminateWorkers();
-});
 
 const tests: Promise<void>[] = [];
 for (const scamType of readdirSync(datasetPath)) {
@@ -25,25 +20,23 @@ for (const scamType of readdirSync(datasetPath)) {
   for (const image of readdirSync(folder)) {
     tests.push(
       (async () => {
-        const text = await readTextFromImage(join(folder, image));
-        const result = checkContent(text, "ocr");
+        const match = await checkImage(join(folder, image));
 
-        const detected = result.detected;
         results.push({
           scamType,
           image,
-          detected,
+          detected: match !== null,
         });
 
         consola.debug(
-          `${image}, score: ${result.confidence ?? 0}, detected: ${detected}, rules: ${result.rules?.length ?? 0}`,
+          `${scamType}/${image}, detected: ${match !== null}, match: ${match?.name ?? "none"}, similarity: ${match?.similarity.toFixed(3) ?? "none"}`,
         );
       })(),
     );
   }
 }
 
-test("detects at least 80% of known scam images by ocr", async () => {
+test("detects at least 80% of unknown scam images by hash", async () => {
   await Promise.all(tests);
 
   const total = results.length;
@@ -51,7 +44,7 @@ test("detects at least 80% of known scam images by ocr", async () => {
   const detectionPercentage = total > 0 ? (detected / total) * 100 : 0;
 
   consola.info(
-    `dataset: ${detected}/${total} detected (${detectionPercentage.toFixed(1)}%)`,
+    `hash dataset: ${detected}/${total} detected (${detectionPercentage.toFixed(1)}%)`,
   );
 
   expect(total).toBeGreaterThan(0);

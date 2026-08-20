@@ -1,6 +1,6 @@
 import consola from "consola";
 import fs from "node:fs";
-import { AnyTextableGuildChannel, ChannelTypes, Message } from "oceanic.js";
+import { AnyTextableGuildChannel, Message } from "oceanic.js";
 import {
   downloadImage,
   extractImageUrls,
@@ -16,6 +16,7 @@ import {
   Br,
 } from "../components";
 import { getGuildConfig, getGuildExclusions } from "./db";
+import { checkImage } from "./hash/utils";
 
 export const processingUsers = new Set<string>();
 export const removedUsers = new Set<string>();
@@ -23,8 +24,11 @@ export const removedUsers = new Set<string>();
 type Task = {
   type: "url" | "attachment";
   value: string;
-  result?: Result;
   filePath?: string;
+  results?: {
+    ocr: Result;
+    image: Awaited<ReturnType<typeof checkImage>>;
+  };
 };
 
 async function removeUser(message: Message, tasks: Task[]) {
@@ -54,12 +58,14 @@ async function removeUser(message: Message, tasks: Task[]) {
 
 Your account has been flagged for possible spam activity or a compromised account and has been removed from \`${guild.name}\`.
 
-**To rejoin, please click [here](${guildConfig.inviteLink})**! We hope this will be your first and last warning, please ensure your account is secure and follows the server rules to avoid future bans.
+If this is a mistake, all you have to do is rejoin the server from the link below.
+
+**To rejoin, please click [here](${guildConfig.inviteLink})**! We hope this will be your first and last warning, please ensure your account is secure and follows the server rules to avoid future punishments.
 
 For guidance on securing your account and avoiding social engineering attacks, we recommend reading [this article](https://discord.com/safety/securing-your-discord-account) from Discord.
 
-Thank you for your understanding,
-*${guild.name}*`}
+Thank you for your understanding.
+`}
           </TextDisplay>
         </Container>
       </ComponentMessage>
@@ -83,26 +89,39 @@ Thank you for your understanding,
     });
 
     consola.info("Member banned and recent messages deleted");
-
     const taskDetails = tasks
       .map((t, i) => {
-        if (!t.result) {
+        if (!t.results) {
           return `### Task ${i + 1}
 **Source:** ${t.type}
 **Result:** No result`;
         }
 
+        const { ocr, image } = t.results;
+        const matches = [
+          ...(ocr.rules?.map((rule) => `\`${rule.pattern.source}\``) ?? []),
+          ...(image
+            ? [
+                `\`${image.type}/${image.name}\` (${(image.similarity * 100).toFixed(1)}%)`,
+              ]
+            : []),
+        ];
+
         return `### Image ${i + 1}
 **Source:** ${t.type}
-**Flagged:** ${t.result.detected ? "Yes" : "No"}
-**Confidence:** ${t.result.confidence}%
-**Matches:** ${
-          t.result.matches.length > 0
-            ? t.result.matches.map((m) => `\`${m.source}\``).join(", ")
-            : "None"
-        }`;
+**Flagged:** ${ocr.detected || image !== null ? "Yes" : "No"}
+**OCR Confidence:** ${ocr.confidence ?? 0}%
+**Image Similarity:** ${
+          image ? `${(image.similarity * 100).toFixed(1)}%` : "None"
+        }
+**Matches:** ${matches.length ? matches.join(", ") : "None"}`;
       })
       .join("\n\n");
+
+    const trimmedTaskDetails =
+      taskDetails.length > 3500
+        ? `${taskDetails.slice(0, 3497)}...`
+        : taskDetails;
 
     const files = tasks
       .filter((task) => task.filePath)
@@ -122,12 +141,12 @@ Thank you for your understanding,
           <TextDisplay>
             ### Details
             <Br />
-            {taskDetails}
+            {trimmedTaskDetails}
           </TextDisplay>
 
           <MediaGallery>
             {tasks
-              .filter((task) => task.filePath && task.result)
+              .filter((task) => task.filePath && task.results)
               .map((_, index) => (
                 <MediaGalleryItem
                   url={`attachment://image-${index + 1}.png`}
@@ -228,40 +247,57 @@ export async function handleMessage(message: Message) {
       tasks.map(async (task) => {
         consola.debug("Processing task", task.value);
 
-        let filePath: string | undefined;
         try {
-          filePath = await downloadImage(task.value);
-
+          const filePath = await downloadImage(task.value);
           if (!filePath) return;
+
           task.filePath = filePath;
+          const [text, imageResult] = await Promise.all([
+            readTextFromImage(filePath),
+            checkImage(filePath),
+          ]);
 
-          const text = await readTextFromImage(filePath);
-          const result = checkContent(text, "ocr");
+          const ocrResult = checkContent(text, "ocr");
+          task.results = {
+            ocr: ocrResult,
+            image: imageResult,
+          };
 
-          task.result = result;
           consola.debug(
             [
               `Task: ${task.type}`,
               `Reference: ${task.value}`,
-              `Detected: ${result.detected}`,
-              `Confidence: ${result.confidence}%`,
-              `Matches: ${
-                result.matches.length
-                  ? result.matches.map((m) => m.source).join(", ")
+              `OCR: ${ocrResult.detected} (${ocrResult.confidence ?? 0}%)`,
+              `OCR matches: ${
+                ocrResult.rules?.length
+                  ? ocrResult.rules
+                      .map((rule) => rule.pattern.source)
+                      .join(", ")
                   : "none"
               }`,
+              `Image: ${imageResult ? "detected" : "none"}`,
+              `Image similarity: ${
+                imageResult
+                  ? `${(imageResult.similarity * 100).toFixed(1)}%`
+                  : "none"
+              }`,
+              `Image class: ${imageResult?.type ?? "none"}`,
+              `Image match: ${imageResult?.name ?? "none"}`,
             ].join("\n"),
           );
-        } catch (err: any) {
-          consola.error("OCR error:", err);
+        } catch (err) {
+          consola.error("Image processing error:", err);
         }
       }),
     );
 
-    const detected = tasks.some((task) => task.result?.detected);
-    consola.debug("Final result, detected:", detected);
+    const detected = tasks.some(
+      (task) => task.results?.ocr.detected || task.results?.image !== null,
+    );
 
-    if (detected) await removeUser(message, tasks);
+    consola.debug("Final result, detected:", detected);
+    if (detected && process.env.DEBUG_MODE !== "true")
+      await removeUser(message, tasks);
   } finally {
     processingUsers.delete(message.author.id);
   }

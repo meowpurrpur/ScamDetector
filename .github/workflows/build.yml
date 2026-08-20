@@ -38,6 +38,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Download datasets
+        run: pnpm datasets:download
+
+      - name: Generate Hashes
+        run: pnpm hashes:gen
+
       - name: Test
         run: pnpm test
 

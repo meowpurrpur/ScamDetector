@@ -5,3 +5,10 @@ dist
 
 eng.traineddata
 temp_*
+
+.datasets.*
+.datasets/**
+
+src/data
+tests/datasets/**
+tests/unknownDatasets/**
