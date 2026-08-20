@@ -9,7 +9,7 @@ export type Command = {
   options?: CommandOption[];
   validations?: Validation[];
 
-  execute(interaction: CommandContext): Promise<void>;
+  execute: (interaction: CommandContext) => Promise<unknown>;
 };
 
 export async function loadCommands(): Promise<Record<string, Command>> {

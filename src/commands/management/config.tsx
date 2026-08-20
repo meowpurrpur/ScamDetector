@@ -1,8 +1,8 @@
-import { guildOnly } from "../validations/guildOnly";
-import { defineCommand } from "../framework/commands";
-import { adminOnly } from "../validations/adminOnly";
-import { ChannelOption, StringOption } from "../components/options";
-import db, { getGuildConfig } from "../lib/db";
+import { guildOnly } from "../../validations/guildOnly";
+import { defineCommand } from "../../framework/commands";
+import { adminOnly } from "../../validations/adminOnly";
+import { ChannelOption, StringOption } from "../../components/options";
+import db, { getGuildConfig } from "../../lib/db";
 import { MessageFlags } from "oceanic.js";
 
 export default defineCommand({

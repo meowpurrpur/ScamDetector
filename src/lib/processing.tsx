@@ -15,7 +15,7 @@ import {
   MediaGalleryItem,
   Br,
 } from "../components";
-import { getGuildConfig } from "./db";
+import { getGuildConfig, getGuildExclusions } from "./db";
 
 export const processingUsers = new Set<string>();
 export const removedUsers = new Set<string>();
@@ -172,12 +172,30 @@ Thank you for your understanding,
 }
 
 export async function handleMessage(message: Message) {
-  if (!message.guild) return;
+  if (!message.guild || !message.channel) return;
   if (
     removedUsers.has(message.author.id) ||
     processingUsers.has(message.author.id)
   )
     return;
+
+  const exclusions = getGuildExclusions(message.guild.id);
+  for (const exclusion of exclusions) {
+    let excluded = false;
+    switch (exclusion.type) {
+      case "user":
+        excluded = message.author.id === exclusion.id;
+        break;
+      case "role":
+        excluded = message.member?.roles.includes(exclusion.id) ?? false;
+        break;
+      case "channel":
+        excluded = message.channel.id === exclusion.id;
+        break;
+    }
+
+    if (excluded) return;
+  }
 
   const guildConfig = getGuildConfig(message.guild.id);
   if (!guildConfig || guildConfig.enabled == 0) return;
