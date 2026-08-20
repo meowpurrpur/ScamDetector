@@ -42,7 +42,7 @@ jobs:
         run: pnpm datasets:download
 
       - name: Generate Hashes
-        run: pnpm hashes:gen
+        run: pnpm hash:gen
 
       - name: Test
         run: pnpm test
