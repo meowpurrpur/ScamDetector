@@ -1,4 +1,3 @@
-import db from "../lib/db";
 import handleMessage from "../lib/handling/handleMessage";
 import { Message } from "oceanic.js";
 

@@ -12,7 +12,12 @@ import {
 import { getGuildConfig } from "../db";
 import { removedUsers } from "./shared";
 
-export default async function removeUser(message: Message, tasks: Task[]) {
+export default async function removeUser(
+  message: Message,
+  tasks: Task[],
+  overallConfidence?: number,
+  threshold?: number,
+) {
   const user = message.author;
   const guild = message.guild;
 
@@ -64,23 +69,27 @@ Thank you for your understanding.
     const member = await guild.getMember(user.id);
     if (!member) throw Error("Failed to find guild member");
 
-    await guild.createBan(user.id, {
-      reason: "Compromised account (softban)",
-      deleteMessageSeconds: 60 * 60 * 24,
-    });
+    if (process.env.DEBUG_MODE !== "true") {
+      await guild.createBan(user.id, {
+        reason: "Compromised account (softban)",
+        deleteMessageSeconds: 60 * 60 * 24,
+      });
 
-    consola.info("Member banned and recent messages deleted");
+      consola.info("Member banned and recent messages deleted");
+    }
+
     const taskDetails = tasks
       .map((t, i) => {
         if (!t.results) {
-          return `### Task ${i + 1}
+          return `### Task ${i + 1} (${t.type})
 **Source:** ${t.type}
 **Result:** No result`;
         }
 
-        const { ocr, image } = t.results;
-        const matches = [
-          ...(ocr.rules?.map((rule) => `\`${rule.pattern.source}\``) ?? []),
+        const { ocr, image, text } = t.results;
+        const matches: string[] = [
+          ...(ocr?.rules?.map((rule) => `\`${rule.pattern.source}\``) ?? []),
+          ...(text?.rules?.map((rule) => `\`${rule.pattern.source}\``) ?? []),
           ...(image
             ? [
                 `\`${image.type}/${image.name}\` (${(image.similarity * 100).toFixed(1)}%)`,
@@ -88,14 +97,35 @@ Thank you for your understanding.
             : []),
         ];
 
-        return `### Image ${i + 1}
-**Source:** ${t.type}
-**Flagged:** ${ocr.detected || image !== null ? "Yes" : "No"}
-**OCR Confidence:** ${ocr.confidence ?? 0}%
-**Image Similarity:** ${
-          image ? `${(image.similarity * 100).toFixed(1)}%` : "None"
+        const lines = [
+          `### ${t.type === "text" ? `Text Task ${i + 1}` : `Image Task ${i + 1}`} (${t.type})`,
+          `**Confidence:** ${t.confidence ?? 0}%`,
+          `**Flagged:** ${t.detected ? "Yes" : "No"}`,
+        ];
+
+        if (ocr) {
+          lines.push(`**OCR Confidence:** ${ocr.confidence ?? 0}%`);
         }
-**Matches:** ${matches.length ? matches.join(", ") : "None"}`;
+
+        if (text) {
+          lines.push(`**Text Confidence:** ${text.confidence ?? 0}%`);
+        }
+
+        if (t.type !== "text") {
+          lines.push(
+            `**Image Similarity:** ${
+              image
+                ? `${(image.similarity * 100).toFixed(1)}%`
+                : "None (0%)"
+            }`,
+          );
+        }
+
+        lines.push(
+          `**Matches:** ${matches.length ? matches.join(", ") : "None"}`,
+        );
+
+        return lines.join("\n");
       })
       .join("\n\n");
 
@@ -114,13 +144,16 @@ Thank you for your understanding.
     const logEmbed = (
       <ComponentMessage files={files}>
         <Container accentColor={0x5865f2}>
-          <TextDisplay>## Member removed</TextDisplay>
+          <TextDisplay># Member removed</TextDisplay>
           <TextDisplay>
             {user.mention} ({user.id}) has been softbanned
           </TextDisplay>
+          <TextDisplay>
+            {`**Confidence:** ${overallConfidence ?? 0}%`}
+          </TextDisplay>
 
           <TextDisplay>
-            ### Details
+            ## Detection Details
             <Br />
             {trimmedTaskDetails}
           </TextDisplay>
@@ -157,11 +190,13 @@ Thank you for your understanding.
       }
     }
 
-    try {
-      await guild.removeBan(user.id, "Softban (compromised account)");
-      consola.info("Member unbanned (softban complete)");
-    } catch (err) {
-      consola.error("Failed to unban member after softban:", err);
+    if (process.env.DEBUG_MODE !== "true") {
+      try {
+        await guild.removeBan(user.id, "Softban (compromised account)");
+        consola.info("Member unbanned (softban complete)");
+      } catch (err) {
+        consola.error("Failed to unban member after softban:", err);
+      }
     }
 
     removedUsers.delete(user.id);

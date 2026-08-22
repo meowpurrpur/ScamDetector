@@ -4,7 +4,7 @@ type Result = {
   detected: boolean;
   rules?: DetectionRule[];
   className?: string;
-  confidence?: number;
+  confidence: number;
   source: ContentSource;
   originalContent?: string;
 };
@@ -20,12 +20,24 @@ type DetectionRule = {
   appliesTo: ContentSource[];
 };
 
+type TaskResults = {
+  ocr?: Result;
+  text?: Result;
+  image?: import("../lib/hash/utils").Match | null;
+};
+
 type Task = {
   type: "url" | "attachment" | "text";
   value: string;
   filePath?: string;
-  results?: {
-    ocr: Result;
-    image: Awaited<Match | null>;
-  };
+  confidence?: number;
+  detected?: boolean;
+  results?: TaskResults;
+};
+
+type OverallResult = {
+  detected: boolean;
+  overallConfidence: number;
+  threshold: number;
+  tasks: Task[];
 };

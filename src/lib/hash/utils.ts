@@ -12,6 +12,7 @@ export interface Match {
   name: string;
   distance: number;
   similarity: number;
+  confidence: number;
 }
 
 let hashes: KnownHash[] | undefined;
@@ -52,7 +53,6 @@ async function loadHashes(): Promise<KnownHash[]> {
   if (hashes) return hashes;
 
   const data = JSON.parse(await readFile("./src/data/hashes.json", "utf8"));
-
   hashes = Object.entries(data).flatMap(([type, hashes]) =>
     Object.entries(hashes as Record<string, string>).map(([name, hash]) => ({
       type,
@@ -72,24 +72,20 @@ export async function checkImage(
   const hash = await getHash(imagePath);
 
   let bestMatch: Match | null = null;
-
   for (const image of knownHashes) {
     const distance = hammingDistance(hash, image.hash);
     const similarity = hashSimilarity(hash, image.hash);
 
-    if (!bestMatch || distance < bestMatch.distance) {
+    if (!bestMatch || distance < bestMatch.distance)
       bestMatch = {
         type: image.type,
         name: image.name,
         distance,
         similarity,
+        confidence: Math.min(100, Math.max(0, Math.round(similarity * 100))),
       };
-    }
   }
 
-  if (!bestMatch || bestMatch.similarity < threshold) {
-    return null;
-  }
-
+  if (!bestMatch || bestMatch.similarity < threshold) return null;
   return bestMatch;
 }

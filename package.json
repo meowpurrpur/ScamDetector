@@ -16,6 +16,7 @@
     "hash:gen": "tsx scripts/generateHashes.ts",
     "datasets:package": "tsx scripts/packageDatasets.ts",
     "datasets:download": "tsx scripts/downloadDatasets.ts",
+    "datasets:upload": "tsx scripts/uploadDatasets",
     "datasets:normalise": "tsx scripts/normaliseDatasets.ts"
   },
   "keywords": [],
