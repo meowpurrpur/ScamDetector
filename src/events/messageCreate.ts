@@ -1,5 +1,5 @@
 import db from "../lib/db";
-import { handleMessage } from "../lib/processing";
+import handleMessage from "../lib/handling/handleMessage";
 import { Message } from "oceanic.js";
 
 export const name = "messageCreate";

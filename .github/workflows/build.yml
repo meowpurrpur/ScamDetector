@@ -43,7 +43,7 @@ jobs:
       - name: Generate hashes
         run: pnpm hash:gen
 
-      - name: Test
+      - name: Test detections
         run: pnpm test
 
       - name: Build

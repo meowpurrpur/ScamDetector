@@ -15,7 +15,8 @@
     "register-commands": "tsx src/lib/registerCommands.ts",
     "hash:gen": "tsx scripts/generateHashes.ts",
     "datasets:package": "tsx scripts/packageDatasets.ts",
-    "datasets:download": "tsx scripts/downloadDatasets.ts"
+    "datasets:download": "tsx scripts/downloadDatasets.ts",
+    "datasets:normalise": "tsx scripts/normaliseDatasets.ts"
   },
   "keywords": [],
   "type": "commonjs",

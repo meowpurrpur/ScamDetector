@@ -19,3 +19,13 @@ type DetectionRule = {
   score: number;
   appliesTo: ContentSource[];
 };
+
+type Task = {
+  type: "url" | "attachment" | "text";
+  value: string;
+  filePath?: string;
+  results?: {
+    ocr: Result;
+    image: Awaited<Match | null>;
+  };
+};
